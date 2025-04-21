@@ -1,0 +1,66 @@
+# Input: space interval [xl,xr], time interval [t0,tF],
+#        number of space steps M, number of time steps N,
+#        functions for initial and L & R boundary conditions
+# Output: solution w
+
+import numpy as np
+from mpl_toolkits.mplot3d import axes3d, Axes3D
+import matplotlib.pyplot as plt
+
+'''
+u_t = D*u_xx, initial heat PDE
+u(x, 0) = f(x), initial distribution
+u(a, t) = l(t) left
+u(b, t) = r(t) right
+
+'''
+
+
+def heatfd(xl,xr,t0,tF,M,N,f,l,r):
+
+    D = 0.1							# diffusion coefficient
+
+    h = float(xr-xl)/M; k=float(tF-t0)/N; m=M-1; n=N
+
+    sigma = D*k/(h*h)
+
+    a  = np.diag(1-2*sigma*np.ones(m)) + np.diag(sigma*np.ones(m-1),1)
+    a +=np. diag(sigma*np.ones(m-1),-1)	# define matrix a
+
+    x = np.linspace(xl,xr,M+1)
+    t = np.linspace(t0,tF,N+1)
+
+    w = np.zeros((m,N+1))   			# 2nd index is time index
+
+    w[:,0] = f(x[1:-1])				# initial conditions
+
+    lside = l(t); rside = r(t)		# boundary conditions
+
+    for j in range(n): #estimating output at forward mesh points
+        w[:,j+1] = np.dot(a,w[:,j]) + sigma*np.hstack((lside[j],np.zeros(m-2),rside[j]))
+
+    w = np.vstack((lside,w,rside))
+
+    [X,T] = np.meshgrid(x,t)			# build the 3-D plot of solution w
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot_wireframe(X, T, w.T)
+    ax.view_init(30, -35)
+    ax.set_xlabel('x'); ax.set_ylabel('t'); ax.set_zlabel('w')
+    plt.show()
+
+    return "This is w:\n{} ".format(w)
+
+def f(x):  #initial profile function
+    return np.sin(2*np.pi*x)**2
+
+def g(x):  #initial derivative profile
+    return x*0
+
+def l(t): #left boundary
+    return 0*t
+
+def r(t): #right boundary
+    return 0*t
+
+print(heatfd(0,1,0,2,10,100, f, l, r))
